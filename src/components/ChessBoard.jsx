@@ -131,7 +131,6 @@ const ChessBoard = () => {
     setSelectedPiece(null);
     setCanPawnPromote(false);
     setPawnPromotion("");
-    setTurn(turn === 'W' ? 'B' : 'W');
 
   }, [canPawnPromote, pawnPromotion])
 
