@@ -23,6 +23,8 @@ const ChessBoard = () => {
   });
   const [enPassantTarget, setEnPassantTarget] = useState(null);
   const [capturedPieces, setCapturedPieces] = useState({ W: [], B: [] });
+  const [pawnPromotion, setPawnPromotion] = useState('');
+  const [canPawnPromote, setCanPawnPromote] = useState(false);
 
   useEffect(() => {
     checkGameStatus();
@@ -49,6 +51,8 @@ const ChessBoard = () => {
     const newBoard = board.map(row => [...row]);
     const [fromRow, fromCol] = [selectedPiece.row, selectedPiece.col];
     const movingPiece = selectedPiece.piece;
+    const [_, ...targetPieceArray] = movingPiece;
+    const currentPiece = targetPieceArray.join('');
 
     // Handle capture
     const capturedPiece = newBoard[toRow][toCol];
@@ -61,7 +65,7 @@ const ChessBoard = () => {
     }
 
     // Handle castling
-    if (movingPiece[1] === 'king' && Math.abs(fromCol - toCol) === 2) {
+    if (currentPiece === 'king' && Math.abs(fromCol - toCol) === 2) {
       const isKingSide = toCol > fromCol;
       const rookCol = isKingSide ? 7 : 0;
       const newRookCol = isKingSide ? 5 : 3;
@@ -70,7 +74,7 @@ const ChessBoard = () => {
     }
 
     // Handle en passant
-    if (movingPiece[1] === 'pawn' && Math.abs(fromCol - toCol) === 1 && newBoard[toRow][toCol] === '') {
+    if (currentPiece === 'pawn' && Math.abs(fromCol - toCol) === 1 && newBoard[toRow][toCol] === '') {
       const capturedPawnRow = fromRow;
       const capturedPawn = newBoard[capturedPawnRow][toCol];
       newBoard[capturedPawnRow][toCol] = '';
@@ -85,8 +89,20 @@ const ChessBoard = () => {
     newBoard[fromRow][fromCol] = '';
 
     // Pawn promotion
-    if (movingPiece[1] === 'pawn' && (toRow === 0 || toRow === 7)) {
-      newBoard[toRow][toCol] = movingPiece[0] + 'queen';
+    if (currentPiece === 'pawn' && (toRow === 0 || toRow === 7)) {
+      let selectionValid = false;
+      while (!selectionValid) {
+        let promotionSelection = prompt("Choose pawn promotion");
+        if (['rook', 'knight', 'bishop', 'queen'].includes(promotionSelection)) {
+          selectionValid = true;
+        }
+        if (promotionSelection && !selectionValid) {
+          alert("Not valid promotion")
+        }
+      }
+      setPawnPromotion(prompt("Choose pawn promotion"));
+      setCanPawnPromote(true);
+      setSelectedPiece({ row: toRow, col: toCol, piece: movingPiece });
     }
 
     // Update castling rights
@@ -94,15 +110,30 @@ const ChessBoard = () => {
 
     // Set en passant target
     setEnPassantTarget(
-      movingPiece[1] === 'pawn' && Math.abs(fromRow - toRow) === 2
+      currentPiece === 'pawn' && Math.abs(fromRow - toRow) === 2
         ? { row: (fromRow + toRow) / 2, col: toCol }
         : null
     );
 
     setBoard(newBoard);
+    if (canPawnPromote) {
+      return;
+    }
     setTurn(turn === 'W' ? 'B' : 'W');
-    setSelectedPiece(null);
   };
+
+  useEffect(() => {
+    if (!canPawnPromote || !pawnPromotion) return;
+
+    const newBoard = board.map(row => [...row]);
+    newBoard[selectedPiece.row][selectedPiece.col] = selectedPiece.piece[0] + pawnPromotion;
+    setBoard(newBoard);
+    setSelectedPiece(null);
+    setCanPawnPromote(false);
+    setPawnPromotion("");
+    setTurn(turn === 'W' ? 'B' : 'W');
+
+  }, [canPawnPromote, pawnPromotion])
 
   const isLegalMove = (startRow, startCol, endRow, endCol) => {
     const piece = board[startRow][startCol];
@@ -158,13 +189,13 @@ const ChessBoard = () => {
     }
 
     // Initial two-square move
-    if (startCol === endCol && startRow === startingRow && endRow === startRow + 2 * direction && 
+    if (startCol === endCol && startRow === startingRow && endRow === startRow + 2 * direction &&
         board[startRow + direction][startCol] === '' && board[endRow][endCol] === '') {
       return true;
     }
 
     // Capture
-    if (Math.abs(startCol - endCol) === 1 && endRow === startRow + direction && 
+    if (Math.abs(startCol - endCol) === 1 && endRow === startRow + direction &&
         (board[endRow][endCol] !== '' || (enPassantTarget && enPassantTarget.row === endRow && enPassantTarget.col === endCol))) {
       return true;
     }
@@ -217,7 +248,7 @@ const ChessBoard = () => {
     if (startRow === endRow && Math.abs(startCol - endCol) === 2) {
       const isKingSide = endCol > startCol;
       if (!castlingRights[color][isKingSide ? 'kingSide' : 'queenSide']) return false;
-      
+
       const rookCol = isKingSide ? 7 : 0;
       if (board[startRow][rookCol][1] !== 'rook') return false;
 
@@ -283,7 +314,7 @@ const ChessBoard = () => {
                 const tempBoard = boardState.map(row => [...row]);
                 tempBoard[endRow][endCol] = tempBoard[startRow][startCol];
                 tempBoard[startRow][startCol] = '';
-                
+
                 if (!isKingInCheck(color, tempBoard)) {
                   return true;
                 }
