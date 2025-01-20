@@ -95,14 +95,12 @@ const ChessBoard = () => {
         let promotionSelection = prompt("Choose pawn promotion");
         if (['rook', 'knight', 'bishop', 'queen'].includes(promotionSelection)) {
           selectionValid = true;
+          newBoard[toRow][toCol] = movingPiece[0] + promotionSelection;
         }
         if (promotionSelection && !selectionValid) {
           alert("Not valid promotion")
         }
       }
-      setPawnPromotion(prompt("Choose pawn promotion"));
-      setCanPawnPromote(true);
-      setSelectedPiece({ row: toRow, col: toCol, piece: movingPiece });
     }
 
     // Update castling rights
@@ -116,23 +114,9 @@ const ChessBoard = () => {
     );
 
     setBoard(newBoard);
-    if (canPawnPromote) {
-      return;
-    }
+    setSelectedPiece(null)
     setTurn(turn === 'W' ? 'B' : 'W');
   };
-
-  useEffect(() => {
-    if (!canPawnPromote || !pawnPromotion) return;
-
-    const newBoard = board.map(row => [...row]);
-    newBoard[selectedPiece.row][selectedPiece.col] = selectedPiece.piece[0] + pawnPromotion;
-    setBoard(newBoard);
-    setSelectedPiece(null);
-    setCanPawnPromote(false);
-    setPawnPromotion("");
-
-  }, [canPawnPromote, pawnPromotion])
 
   const isLegalMove = (startRow, startCol, endRow, endCol) => {
     const piece = board[startRow][startCol];
